@@ -13,11 +13,13 @@ var mainState = {
 
         game.stage.backgroundColor = '#71c5cf';
 
-        game.load.image('bird', 'assets/bird.png');
         game.load.image('pipe', 'assets/pipe.png');
 
         // Load the jump sound
         game.load.audio('jump', 'assets/jump.wav');
+
+        // Load in spritesheet.
+        game.load.spritesheet('plane', 'assets/plane_scaled.png', 50, 43);
     },
 
     create: function() {
@@ -26,12 +28,18 @@ var mainState = {
         this.pipes = game.add.group();
         this.timer = game.time.events.loop(1500, this.addRowOfPipes, this);
 
-        this.bird = game.add.sprite(100, 245, 'bird');
-        game.physics.arcade.enable(this.bird);
-        this.bird.body.gravity.y = 1000;
+        this.plane = game.add.sprite(100, 245, 'plane');
+        // Set default frame.
+        this.plane.frame = 0;
+        game.physics.arcade.enable(this.plane);
+        this.plane.body.gravity.y = 1000;
+
+        // Animate.
+        this.plane.animations.add('motor', [0,1,2,1], 30, true);
+        this.plane.animations.play('motor');
 
         // New anchor position
-        this.bird.anchor.setTo(-0.2, 0.5);
+        this.plane.anchor.setTo(-0.2, 0.5);
 
         var spaceKey = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         spaceKey.onDown.add(this.jump, this);
@@ -46,37 +54,37 @@ var mainState = {
     },
 
     update: function() {
-        if (this.bird.y < 0 || this.bird.y > game.world.height)
+        if (this.plane.y < 0 || this.plane.y > game.world.height)
             this.restartGame();
 
-        game.physics.arcade.overlap(this.bird, this.pipes, this.hitPipe, null, this);
+        game.physics.arcade.overlap(this.plane, this.pipes, this.hitPipe, null, this);
 
-        // Slowly rotate the bird downward, up to a certain point.
-        if (this.bird.angle < 20)
-            this.bird.angle += 1;
+        // Slowly rotate the plane downward, up to a certain point.
+        if (this.plane.angle < 20)
+            this.plane.angle += 1;
     },
 
     jump: function() {
-        // If the bird is dead, he can't jump
-        if (this.bird.alive == false)
+        // If the plane is dead, he can't jump
+        if (this.plane.alive == false)
             return;
 
-        this.bird.body.velocity.y = -350;
+        this.plane.body.velocity.y = -350;
 
         // Jump animation
-        game.add.tween(this.bird).to({angle: -20}, 100).start();
+        game.add.tween(this.plane).to({angle: -20}, 100).start();
 
         // Play sound
         this.jumpSound.play();
     },
 
     hitPipe: function() {
-        // If the bird has already hit a pipe, we have nothing to do
-        if (this.bird.alive == false)
+        // If the plane has already hit a pipe, we have nothing to do
+        if (this.plane.alive == false)
             return;
 
-        // Set the alive property of the bird to false
-        this.bird.alive = false;
+        // Set the alive property of the plane to false
+        this.plane.alive = false;
 
         // Prevent new pipes from appearing
         game.time.events.remove(this.timer);
