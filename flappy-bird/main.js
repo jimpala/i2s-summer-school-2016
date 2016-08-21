@@ -13,10 +13,10 @@ defaultState = {
 
 // Initialise Q matrix.
 var QMatrix = new Array();
-for (var i = 0; i<350; i++) {
+for (var i = -500; i<500; i++) {
     QMatrix[i] = new Array();
 
-    for (var j = 0; j<350; j++) {
+    for (var j = -500; j<500; j++) {
         QMatrix[i][j] = new Array();
 
         for (var k = 0; k<2; k++) {
@@ -103,12 +103,16 @@ class Main extends Phaser.State {
         this.refPipe = this.game.add.group();
 
 
+
+
         /* BASE CODE */
         // Use Phaser's ARCADE physics engine.
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
         // Create a grouping for pipes sprites.
         this.pipes = this.game.add.group();
+        // Set start pipe.
+        this.addStationaryPipe(400, 245, true);
 
         //Add a row of pipes every 1700ms.
         this.timer = this.game.time.events.loop(1600, this.addRowOfPipes, this);
@@ -153,15 +157,17 @@ class Main extends Phaser.State {
      */
     update() {
 
-        // Check for collision and if plane is inside bounds.
-        this.game.physics.arcade.overlap(this.plane, this.pipes, this.hitPipe, null, this);
-        this.checkPlaneBounds();
-
         if (this.planeAlive) {
 
+            // Check for collision and if plane is inside bounds.
+            this.game.physics.arcade.overlap(this.plane, this.pipes, this.hitPipe, null, this);
+            this.checkPlaneBounds();
+
             // Calculate current x and y co-ords.
-            this.currentState = [this.refPipe.position.x - this.plane.position.x,
-                this.refPipe.position.y - this.plane.position.y]
+            this.currentState = [Math.floor(this.refPipe.position.x - this.plane.position.x),
+                Math.floor(this.refPipe.position.y - this.plane.position.y)]
+            console.log('hello');
+            console.log(this.currentState);
 
             // SPECIAL CASE: start of program
             if (this.lastState == null) {
@@ -248,6 +254,7 @@ class Main extends Phaser.State {
         this.game.physics.arcade.enable(pipe);
 
         if (ref == true) {
+            this.refPipe.removeAll();
             this.refPipe.add(pipe);
         }
 
@@ -280,6 +287,16 @@ class Main extends Phaser.State {
         this.labelScore.text = this.score;
     }
 
+    addStationaryPipe(x, y) {
+        var pipe = this.game.add.sprite(x, y, 'pipe');
+        this.pipes.add(pipe);
+        this.game.physics.arcade.enable(pipe);
+
+
+        this.refPipe.removeAll();
+        this.refPipe.add(pipe);
+    }
+
     /*
     Q LEARN STUFF
      */
@@ -305,7 +322,7 @@ class Main extends Phaser.State {
 
         else if (pass < jump) {
             this.lastAction = action.jump;
-            this.plane.jump();
+            this.jump();
         }
     }
 
