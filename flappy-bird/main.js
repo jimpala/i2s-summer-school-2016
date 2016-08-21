@@ -26,6 +26,19 @@ for (var i = 0; i<350; i++) {
 }
 console.log(QMatrix);
 
+// QMatrix PARAMETERS
+const alpha = 0.5;
+const gamma = 1;
+const reward = {
+    alive: 15,
+    dead: -1000
+}
+const action = {
+    pass: 0,
+    jump: 1
+}
+
+
 
 /*
 Main class (Phaser.State implementation)
@@ -85,6 +98,7 @@ class Main extends Phaser.State {
 
         this.currentState = null;
         this.lastState = null;
+        this.lastAction = null;
 
         this.refPipe = this.game.add.group();
 
@@ -139,19 +153,47 @@ class Main extends Phaser.State {
      */
     update() {
 
-        currentState =
-
-
+        // Check for collision and if plane is inside bounds.
         this.game.physics.arcade.overlap(this.plane, this.pipes, this.hitPipe, null, this);
+        this.checkPlaneBounds();
 
-        // Slowly rotate the plane downward, up to a certain point.
-        if (this.plane.angle < 20) {
-            this.plane.angle += 1;
+        if (this.planeAlive) {
+
+            // Calculate current x and y co-ords.
+            this.currentState = [this.refPipe.position.x - this.plane.position.x,
+                this.refPipe.position.y - this.plane.position.y]
+
+            // SPECIAL CASE: start of program
+            if (this.lastState == null) {
+                this.lastState = this.currentState;
+            }
+
+            if (this.currentState != this.lastState) {
+
+                // Update Q.
+                var oldQ = QMatrix[this.lastState[0]][this.lastState[1]][this.lastAction];
+                var newQ = alpha * (this.rewardIfAlive(this.planeAlive) + gamma + this.maxQ(this.currentState) - oldQ);
+                QMatrix[this.lastState[0]][this.lastState[1]][this.lastAction] = newQ;
+
+                // Decide next plane action.
+                this.bestAction(this.currentState);
+
+                // Set lastState to this new state.
+                this.lastState = this.currentState;
+
+
+            }
+
+            // Slowly rotate the plane downward, up to a certain point.
+            if (this.plane.angle < 20) {
+                this.plane.angle += 1;
+            }
         }
 
-        // Restart game if out of bounds
-        if (this.plane.y < 0 || this.plane.y > this.game.world.height)
+        else {
             this.restartGame();
+        }
+
     }
 
     jump() {
@@ -236,6 +278,47 @@ class Main extends Phaser.State {
         // Update the score variable and counter when a new row is added.
         this.score += 1;
         this.labelScore.text = this.score;
+    }
+
+    /*
+    Q LEARN STUFF
+     */
+
+
+    /*
+    checkPlaneBounds()
+    Kills plane if out of bounds.
+     */
+    checkPlaneBounds() {
+        if (this.plane.y < 0 || this.plane.y > this.game.world.height) {
+            this.planeAlive = false;
+        }
+    }
+
+    bestAction(coords) {
+        var pass = QMatrix[coords[0]][coords[1]][action.pass];
+        var jump = QMatrix[coords[0]][coords[1]][action.jump];
+
+        if (pass >= jump) {
+            this.lastAction = action.pass;
+        }
+
+        else if (pass < jump) {
+            this.lastAction = action.jump;
+            this.plane.jump();
+        }
+    }
+
+    rewardIfAlive(bool) {
+        if (bool) {return reward.alive}
+        else {return reward.dead}
+    }
+
+    maxQ(coords) {
+        var pass = QMatrix[coords[0]][coords[1]][action.pass];
+        var jump = QMatrix[coords[0]][coords[1]][action.jump];
+
+        return (pass >= jump ? pass : jump);
     }
 }
 
