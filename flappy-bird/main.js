@@ -39,6 +39,7 @@ class Main extends Phaser.State {
 
         // Import pipe image.
         this.game.load.image('pipe', 'assets/pipe.png');
+        this.game.load.image('brick', 'assets/brickSpecial03.png');
 
         // Import jump sound
         this.game.load.audio('jump', 'assets/jump.wav');
@@ -159,15 +160,15 @@ class Main extends Phaser.State {
     to the 'pipes' group.
      */
     addOnePipe(x, y) {
-        var pipe = this.game.add.sprite(x, y, 'pipe');
-        this.pipes.add(pipe);
-        this.game.physics.arcade.enable(pipe);
+        var brick = this.game.add.sprite(x, y, 'brick');
+        this.pipes.add(brick);
+        this.game.physics.arcade.enable(brick);
 
-        pipe.body.velocity.x = -200;
+        brick.body.velocity.x = -200;
 
-        // Delete pipe when it moves off the display.
-        pipe.checkWorldBounds = true;
-        pipe.outOfBoundsKill = true;
+        // Delete brick when it moves off the display.
+        brick.checkWorldBounds = true;
+        brick.outOfBoundsKill = true;
     }
 
     /*
@@ -178,7 +179,7 @@ class Main extends Phaser.State {
     addRowOfPipes() {
         var hole = Math.floor(Math.random()*5)+1;
 
-        for (var i = 0; i < 8; i++)
+        for (var i = 7; i > -2; i--)
             if (i != hole && i != hole +1)
                 this.addOnePipe(400, i*60+10);
 
