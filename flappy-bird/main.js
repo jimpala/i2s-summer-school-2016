@@ -5,6 +5,27 @@ Phaser 'State' objects each contain a member variable "game" that acts as
 a reference to the current game. This can be handy!
  */
 
+// Default state lookup.
+defaultState = {
+    xPipe: 350,
+    yPipe: 245
+};
+
+// Initialise Q matrix.
+var QMatrix = new Array();
+for (var i = 0; i<350; i++) {
+    QMatrix[i] = new Array();
+
+    for (var j = 0; j<350; j++) {
+        QMatrix[i][j] = new Array();
+
+        for (var k = 0; k<2; k++) {
+            QMatrix[i][j][k] = 0;
+        }
+    }
+}
+console.log(QMatrix);
+
 
 /*
 Main class (Phaser.State implementation)
@@ -57,17 +78,29 @@ class Main extends Phaser.State {
     be changed dynamically.
      */
     create() {
+
+        this.planeAlive = true;
+        this.xPipe = defaultState.xPipe;
+        this.yPipe = defaultState.yPipe;
+
+        this.currentState = null;
+        this.lastState = null;
+
+        this.refPipe = this.game.add.group();
+
+
+        /* BASE CODE */
         // Use Phaser's ARCADE physics engine.
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
         // Create a grouping for pipes sprites.
         this.pipes = this.game.add.group();
 
-        //Add a row of pipes every 1500ms.
-        this.timer = this.game.time.events.loop(1500, this.addRowOfPipes, this);
+        //Add a row of pipes every 1700ms.
+        this.timer = this.game.time.events.loop(1600, this.addRowOfPipes, this);
 
         this.plane = this.game.add.sprite(100, 245, 'plane');
-        this.plane.frame = 0; //default sprtie plane frame (upon import)
+        this.plane.frame = 0; //default sprite plane frame (upon import)
         this.game.physics.arcade.enable(this.plane);
         this.plane.body.gravity.y = 1000;
 
@@ -91,6 +124,9 @@ class Main extends Phaser.State {
         // Add the jump sound.
         this.jumpSound = this.game.add.audio('jump');
         this.jumpSound.volume = 0.2;
+        /* END BASE CODE */
+
+
     }
 
     /*
@@ -102,19 +138,25 @@ class Main extends Phaser.State {
     such as object collisions.
      */
     update() {
-        if (this.plane.y < 0 || this.plane.y > this.game.world.height)
-            this.restartGame();
+
+        currentState =
+
 
         this.game.physics.arcade.overlap(this.plane, this.pipes, this.hitPipe, null, this);
 
         // Slowly rotate the plane downward, up to a certain point.
-        if (this.plane.angle < 20)
+        if (this.plane.angle < 20) {
             this.plane.angle += 1;
+        }
+
+        // Restart game if out of bounds
+        if (this.plane.y < 0 || this.plane.y > this.game.world.height)
+            this.restartGame();
     }
 
     jump() {
         // If the plane is dead, he can't jump
-        if (this.plane.alive == false)
+        if (this.planeAlive == false)
             return;
 
         this.plane.body.velocity.y = -350;
@@ -128,11 +170,11 @@ class Main extends Phaser.State {
 
     hitPipe() {
         // If the plane has already hit a pipe, we have nothing to do
-        if (this.plane.alive == false)
+        if (this.planeAlive == false)
             return;
 
         // Set the alive property of the plane to false
-        this.plane.alive = false;
+        this.planeAlive = false;
 
         // Prevent new pipes from appearing
         this.game.time.events.remove(this.timer);
@@ -158,12 +200,16 @@ class Main extends Phaser.State {
     Configures pipe behaviour, adds it to the game world and
     to the 'pipes' group.
      */
-    addOnePipe(x, y) {
+    addOnePipe(x, y, ref=false) {
         var pipe = this.game.add.sprite(x, y, 'pipe');
         this.pipes.add(pipe);
         this.game.physics.arcade.enable(pipe);
 
-        pipe.body.velocity.x = -200;
+        if (ref == true) {
+            this.refPipe.add(pipe);
+        }
+
+        pipe.body.velocity.x = -225;
 
         // Delete pipe when it moves off the display.
         pipe.checkWorldBounds = true;
@@ -178,10 +224,15 @@ class Main extends Phaser.State {
     addRowOfPipes() {
         var hole = Math.floor(Math.random()*5)+1;
 
-        for (var i = 0; i < 8; i++)
-            if (i != hole && i != hole +1)
-                this.addOnePipe(400, i*60+10);
+        for (var i = 0; i < 8; i++) {
+            if (i == hole + 2) {
+                this.addOnePipe(400, i * 60 + 10, true);
+            }
 
+            else if (i != hole && i != hole + 1) {
+                this.addOnePipe(400, i * 60 + 10);
+            }
+        }
         // Update the score variable and counter when a new row is added.
         this.score += 1;
         this.labelScore.text = this.score;
